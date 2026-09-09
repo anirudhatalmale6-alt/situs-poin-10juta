@@ -57,14 +57,6 @@ CREATE TABLE IF NOT EXISTS redemptions (
     CONSTRAINT fk_rd_reward FOREIGN KEY (reward_id) REFERENCES rewards(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE IF NOT EXISTS pages (
-    id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    slug       VARCHAR(80)  NOT NULL UNIQUE,
-    title      VARCHAR(150) NOT NULL,
-    body       TEXT         NOT NULL,
-    updated_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
 -- Katalog hadiah contoh (silakan ganti lewat panel admin).
 INSERT INTO rewards (title, description, cost, icon, stock, active) VALUES
  ('Pulsa 10.000',         'Pulsa semua operator, diproses maksimal 1x24 jam.', 1000,  '📱', 100, 1),

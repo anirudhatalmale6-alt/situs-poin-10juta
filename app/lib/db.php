@@ -129,14 +129,6 @@ function db_migrate(PDO $pdo, string $driver): void
                 note       TEXT    NULL,
                 created_at TEXT    NOT NULL DEFAULT (datetime('now'))
             )");
-        $pdo->exec("
-            CREATE TABLE IF NOT EXISTS pages (
-                id         INTEGER PRIMARY KEY AUTOINCREMENT,
-                slug       TEXT NOT NULL UNIQUE,
-                title      TEXT NOT NULL,
-                body       TEXT NOT NULL,
-                updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-            )");
     } else {
         $pdo->exec("
             CREATE TABLE IF NOT EXISTS users (
@@ -188,14 +180,6 @@ function db_migrate(PDO $pdo, string $driver): void
                 created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 CONSTRAINT fk_rd_user   FOREIGN KEY (user_id)   REFERENCES users(id)   ON DELETE CASCADE,
                 CONSTRAINT fk_rd_reward FOREIGN KEY (reward_id) REFERENCES rewards(id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-        $pdo->exec("
-            CREATE TABLE IF NOT EXISTS pages (
-                id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                slug       VARCHAR(80)  NOT NULL UNIQUE,
-                title      VARCHAR(150) NOT NULL,
-                body       TEXT         NOT NULL,
-                updated_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
 
