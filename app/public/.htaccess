@@ -1,0 +1,25 @@
+# Kompresi + cache aset statis
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml application/javascript application/json
+</IfModule>
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css            "access plus 1 month"
+  ExpiresByType application/javascript "access plus 1 month"
+  ExpiresByType image/svg+xml       "access plus 1 month"
+</IfModule>
+
+# Header keamanan dasar
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Halaman depan
+DirectoryIndex index.php index.html
+
+# Blokir akses ke folder di luar public (jika salah menaruh docroot)
+<FilesMatch "\.(sqlite|log|md)$">
+  Require all denied
+</FilesMatch>

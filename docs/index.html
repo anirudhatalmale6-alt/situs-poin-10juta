@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10 Juta Poin — Demo</title>
+<meta name="description" content="Demo situs program poin: pendaftaran, dashboard, penukaran, dan riwayat transaksi poin.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0f766e">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230f766e'/><text x='16' y='22' font-size='15' font-family='sans-serif' font-weight='bold' fill='white' text-anchor='middle'>10</text></svg>">
+<style>
+  .demo-bar { background:#0b1220; color:#cbd5e1; font-size:.84rem; padding:8px 0; }
+  .demo-bar .wrap { display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:space-between; }
+  .demo-bar b { color:#fff; }
+  .demo-bar button { background:transparent; border:1px solid #334155; color:#cbd5e1; border-radius:7px;
+                     padding:4px 10px; font-size:.8rem; cursor:pointer; font-family:inherit; }
+  .demo-bar button:hover { border-color:#64748b; color:#fff; }
+</style>
+</head>
+<body>
+
+<div class="demo-bar">
+  <div class="wrap">
+    <span><b>Demo interaktif.</b> Semua data disimpan di browser Anda sendiri — aman untuk dicoba-coba.</span>
+    <span>
+      Akun contoh: <b>siti@contoh.id</b> / <b>rahasia123</b>
+      <button type="button" onclick="resetDemo()">Reset data demo</button>
+    </span>
+  </div>
+</div>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="#/"><span class="logo-mark">10</span>10 Juta Poin</a>
+    <button class="nav-toggle" type="button" aria-label="Buka menu" onclick="document.getElementById('nav').classList.toggle('open')">☰</button>
+    <nav class="nav" id="nav"></nav>
+  </div>
+</header>
+
+<main id="app"></main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <h4>10 Juta Poin</h4>
+        <p style="max-width:34ch">Kumpulkan poin, tukar jadi kebutuhan harian.</p>
+      </div>
+      <div><h4>Program</h4>
+        <a href="#/cara-kerja">Cara kerja poin</a>
+        <a href="#/katalog">Katalog penukaran</a>
+        <a href="#/daftar">Daftar anggota</a></div>
+      <div><h4>Bantuan</h4>
+        <a href="#/bantuan">Pertanyaan umum</a></div>
+      <div><h4>Legal</h4>
+        <a href="#/syarat">Syarat &amp; ketentuan</a></div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2026 10 Juta Poin — demo tampilan &amp; alur.</span>
+      <span>Versi produksi berjalan di PHP + MySQL.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* =========================================================================
+   Backend tiruan untuk demo. Di versi produksi, seluruh fungsi di bawah ini
+   dikerjakan oleh PHP + MySQL (lihat folder app/ pada repo).
+   ========================================================================= */
+
+const KEY = 'demo10jt.v1';
+const CFG = { goal: 10000000, signup: 1000, daily: 250 };
+
+const REWARDS = [
+  { id:1, title:'Pulsa 10.000',         desc:'Pulsa semua operator, diproses maksimal 1x24 jam.', cost:1000,  icon:'📱', stock:100 },
+  { id:2, title:'Paket Data 3 GB',      desc:'Kuota utama 30 hari.',                              cost:2500,  icon:'🌐', stock:60  },
+  { id:3, title:'Token Listrik 20rb',   desc:'Kode token dikirim ke dashboard.',                  cost:4000,  icon:'💡', stock:50  },
+  { id:4, title:'Voucher Belanja 25rb', desc:'Berlaku di merchant rekanan.',                      cost:5000,  icon:'🛒', stock:40  },
+  { id:5, title:'Saldo E-Wallet 50rb',  desc:'Transfer ke nomor e-wallet terdaftar.',             cost:9000,  icon:'💳', stock:30  },
+  { id:6, title:'Beras 5 kg',           desc:'Diantar ke alamat terdaftar.',                      cost:12000, icon:'🍚', stock:25  }
+];
+
+const TYPES = {
+  bonus_daftar:'Bonus pendaftaran', bonus_harian:'Absen harian', tugas:'Selesai tugas',
+  referral:'Bonus referral', belanja:'Transaksi belanja', penukaran:'Penukaran hadiah',
+  koreksi:'Penyesuaian admin'
+};
+
+function seed() {
+  const s = { users:[], txs:[], redemptions:[], rewards:JSON.parse(JSON.stringify(REWARDS)), session:null, nextId:1 };
+  const siti = { id:1, name:'Siti Rahayu', email:'siti@contoh.id', pass:'rahasia123', points:0, lastBonus:null, created:'2026-08-02T09:14:00' };
+  s.users.push(siti); s.nextId = 2;
+  const add = (uid,amt,type,note,when) => {
+    const u = s.users.find(x=>x.id===uid);
+    u.points += amt;
+    s.txs.push({ id:s.txs.length+1, uid, amt, type, note, balance:u.points, at:when });
+  };
+  add(1, 1000,  'bonus_daftar','Bonus sambutan anggota baru',            '2026-08-02T09:14:00');
+  add(1, 3500,  'tugas',       'Menyelesaikan survei kebutuhan rumah tangga','2026-08-05T19:02:00');
+  add(1, 1500,  'referral',    'Referral: Budi Santoso bergabung',       '2026-08-11T08:40:00');
+  add(1, 7250,  'belanja',     'Transaksi belanja Rp 725.000',           '2026-08-20T16:25:00');
+  add(1, -2500, 'penukaran',   'Tukar: Paket Data 3 GB',                 '2026-08-21T10:05:00');
+  s.redemptions.push({ id:1, uid:1, rewardId:2, cost:2500, status:'approved', at:'2026-08-21T10:05:00' });
+  return s;
+}
+
+let S = load();
+function load() {
+  try { const raw = localStorage.getItem(KEY); if (raw) return JSON.parse(raw); } catch(e) {}
+  const s = seed(); localStorage.setItem(KEY, JSON.stringify(s)); return s;
+}
+function save() { localStorage.setItem(KEY, JSON.stringify(S)); }
+function resetDemo() {
+  localStorage.removeItem(KEY); S = load();
+  // replaceState: ganti rute tanpa memicu hashchange, supaya pesan tidak langsung terhapus render kedua
+  history.replaceState(null, '', '#/');
+  pesan = { msg:'Data demo dikembalikan ke kondisi awal.', type:'ok' };
+  render();
+}
+
+function me() { return S.session ? S.users.find(u => u.id === S.session) : null; }
+
+function addPoints(uid, amt, type, note) {
+  const u = S.users.find(x => x.id === uid);
+  if (u.points + amt < 0) throw new Error('Poin tidak mencukupi.');
+  u.points += amt;
+  S.txs.push({ id:S.txs.length+1, uid, amt, type, note, balance:u.points, at:new Date().toISOString() });
+  save();
+  return u.points;
+}
+
+/* ---------- util tampilan ---------- */
+const P = n => Number(n).toLocaleString('id-ID');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+function tgl(iso) {
+  const d = new Date(iso);
+  return d.getDate() + ' ' + BULAN[d.getMonth()] + ' ' + d.getFullYear() + ', ' +
+         String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+let pesan = null;
+function toast(msg, type='ok') { pesan = { msg, type }; render(); }
+
+/* ---------- navigasi ---------- */
+function nav() {
+  const u = me();
+  const link = (h,t) => `<a href="${h}" class="${location.hash===h?'active':''}">${t}</a>`;
+  return link('#/','Beranda') + link('#/katalog','Tukar Poin') + link('#/cara-kerja','Cara Kerja') +
+         link('#/bantuan','Bantuan') +
+         (u ? link('#/dashboard','Dashboard') + link('#/admin','Admin') +
+              `<a class="btn btn-ghost btn-sm" href="#/keluar">Keluar</a>`
+            : link('#/masuk','Masuk') + `<a class="btn btn-primary btn-sm" href="#/daftar">Daftar Gratis</a>`);
+}
+
+/* ---------- halaman ---------- */
+function vBeranda() {
+  const diberi = S.txs.filter(t=>t.amt>0).reduce((a,t)=>a+t.amt,0);
+  const pct = Math.min(100, diberi / CFG.goal * 100);
+  const top = S.rewards.slice(0,3).map(r => `
+    <div class="reward"><div class="thumb">${r.icon}</div><div class="body">
+      <h3 class="mb0">${esc(r.title)}</h3>
+      <p class="small muted">${esc(r.desc)}</p>
+      <div class="cost">${P(r.cost)} poin</div>
+      <a class="btn btn-ghost btn-sm" href="#/katalog">Tukar sekarang</a>
+    </div></div>`).join('');
+
+  return `
+  <section class="hero"><div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">Program loyalitas</span>
+      <h1>10 juta poin untuk kebutuhan harian Anda</h1>
+      <p>Kumpulkan poin dari aktivitas sehari-hari, pantau saldonya secara transparan,
+         lalu tukarkan dengan pulsa, paket data, sembako, dan kebutuhan lain.
+         Setiap poin masuk dan keluar tercatat rapi di riwayat Anda.</p>
+      <div class="hero-actions">
+        <a class="btn btn-gold" href="#/daftar">Daftar Gratis</a>
+        <a class="btn btn-ghost" href="#/cara-kerja">Lihat cara kerjanya</a>
+      </div>
+    </div>
+    <div class="poin-card">
+      <div class="label">Total poin dibagikan</div>
+      <div class="value">${P(diberi)}</div>
+      <div class="progress" style="margin-bottom:16px"><i style="width:${Math.max(1,pct)}%"></i></div>
+      <div class="row"><span>Target program</span><span>${P(CFG.goal)} poin</span></div>
+      <div class="row"><span>Anggota terdaftar</span><span>${P(S.users.length)}</span></div>
+      <div class="row"><span>Transaksi poin</span><span>${P(S.txs.length)}</span></div>
+      <div class="row"><span>Penukaran diproses</span><span>${P(S.redemptions.length)}</span></div>
+    </div>
+  </div></section>
+
+  <section class="section"><div class="wrap">
+    <div class="section-head center">
+      <h2>Kenapa programnya sederhana tapi rapi</h2>
+      <p>Fondasinya dibuat stabil dulu, supaya fitur lanjutan bisa ditambah tanpa membongkar ulang.</p>
+    </div>
+    <div class="grid grid-3">
+      <div class="card"><div class="card-icon">📒</div><h3>Buku besar poin</h3>
+        <p>Saldo tidak pernah diubah diam-diam. Setiap penambahan dan pengurangan membuat satu baris riwayat lengkap dengan sisa saldo saat itu.</p></div>
+      <div class="card"><div class="card-icon">📱</div><h3>Mobile-first</h3>
+        <p>Tata letak dirancang dari layar kecil dulu. Halaman ringan, tanpa framework berat, jadi tetap cepat di jaringan seluler.</p></div>
+      <div class="card"><div class="card-icon">🔒</div><h3>Aman sejak awal</h3>
+        <p>Kata sandi di-hash, semua form dilindungi token CSRF, dan seluruh query memakai prepared statement.</p></div>
+      <div class="card"><div class="card-icon">🎁</div><h3>Katalog fleksibel</h3>
+        <p>Daftar hadiah, harga poin, dan stok diatur dari panel admin — tanpa perlu menyentuh kode.</p></div>
+      <div class="card"><div class="card-icon">🔍</div><h3>SEO dasar siap</h3>
+        <p>Judul, meta description, canonical, Open Graph, sitemap, dan data terstruktur sudah terpasang.</p></div>
+      <div class="card"><div class="card-icon">🧩</div><h3>Siap dikembangkan</h3>
+        <p>Struktur kode terpisah antara data, logika poin, dan tampilan. E-commerce, blog, atau referral bisa menyusul.</p></div>
+    </div>
+  </div></section>
+
+  <section class="section alt"><div class="wrap">
+    <div class="section-head center"><h2>Tiga langkah saja</h2></div>
+    <div class="grid grid-3">
+      <div class="step"><div class="step-num">1</div><div><h3>Daftar</h3>
+        <p>Buat akun dengan email dan kata sandi. Langsung dapat bonus sambutan <strong>${P(CFG.signup)} poin</strong>.</p></div></div>
+      <div class="step"><div class="step-num">2</div><div><h3>Kumpulkan poin</h3>
+        <p>Absen harian, selesaikan tugas, atau dapat poin dari transaksi. Semua tercatat otomatis.</p></div></div>
+      <div class="step"><div class="step-num">3</div><div><h3>Tukar kebutuhan</h3>
+        <p>Pilih dari katalog, poin langsung terpotong, dan status penukaran bisa dipantau di dashboard.</p></div></div>
+    </div>
+  </div></section>
+
+  <section class="section"><div class="wrap">
+    <div class="flex between" style="margin-bottom:22px">
+      <h2 class="mb0">Bisa ditukar dengan</h2><a href="#/katalog">Lihat semua &rarr;</a>
+    </div>
+    <div class="grid grid-3">${top}</div>
+  </div></section>`;
+}
+
+function vMasuk() {
+  return `<div class="wrap auth-shell"><div class="form-card">
+    <h1 style="font-size:1.4rem">Masuk</h1>
+    <p class="small muted">Belum punya akun? <a href="#/daftar">Daftar gratis</a>.</p>
+    <div id="err"></div>
+    <form onsubmit="return doMasuk(event)">
+      <div class="field"><label for="email">Email</label>
+        <input class="input" id="email" type="email" value="siti@contoh.id" required></div>
+      <div class="field"><label for="pass">Kata sandi</label>
+        <input class="input" id="pass" type="password" value="rahasia123" required></div>
+      <button class="btn btn-primary btn-block" type="submit">Masuk</button>
+    </form>
+  </div></div>`;
+}
+
+function doMasuk(ev) {
+  ev.preventDefault();
+  const email = document.getElementById('email').value.trim().toLowerCase();
+  const pass  = document.getElementById('pass').value;
+  const u = S.users.find(x => x.email === email && x.pass === pass);
+  if (!u) { document.getElementById('err').innerHTML = '<div class="alert alert-error">Email atau kata sandi salah.</div>'; return false; }
+  S.session = u.id; save(); location.hash = '#/dashboard'; return false;
+}
+
+function vDaftar() {
+  return `<div class="wrap auth-shell"><div class="form-card">
+    <h1 style="font-size:1.4rem">Daftar gratis</h1>
+    <p class="small muted">Sudah punya akun? <a href="#/masuk">Masuk di sini</a>.</p>
+    <div id="err"></div>
+    <form onsubmit="return doDaftar(event)">
+      <div class="field"><label for="nm">Nama lengkap</label><input class="input" id="nm" required></div>
+      <div class="field"><label for="em">Email</label><input class="input" id="em" type="email" required></div>
+      <div class="field"><label for="hp">Nomor HP <span class="muted">(opsional)</span></label><input class="input" id="hp" type="tel"></div>
+      <div class="field"><label for="pw">Kata sandi</label><input class="input" id="pw" type="password" required>
+        <div class="hint">Minimal 8 karakter.</div></div>
+      <button class="btn btn-primary btn-block" type="submit">Buat akun</button>
+    </form>
+  </div></div>`;
+}
+
+function doDaftar(ev) {
+  ev.preventDefault();
+  const nm = document.getElementById('nm').value.trim();
+  const em = document.getElementById('em').value.trim().toLowerCase();
+  const pw = document.getElementById('pw').value;
+  const errs = [];
+  if (nm.length < 3) errs.push('Nama minimal 3 karakter.');
+  if (pw.length < 8) errs.push('Kata sandi minimal 8 karakter.');
+  if (S.users.some(u => u.email === em)) errs.push('Email tersebut sudah terdaftar.');
+  if (errs.length) {
+    document.getElementById('err').innerHTML =
+      '<div class="alert alert-error"><ul>' + errs.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul></div>';
+    return false;
+  }
+  const u = { id:S.nextId++, name:nm, email:em, pass:pw, points:0, lastBonus:null, created:new Date().toISOString() };
+  S.users.push(u); S.session = u.id; save();
+  addPoints(u.id, CFG.signup, 'bonus_daftar', 'Bonus sambutan anggota baru');
+  location.hash = '#/dashboard';
+  toast('Selamat datang! Bonus ' + P(CFG.signup) + ' poin sudah masuk.');
+  return false;
+}
+
+function vDashboard() {
+  const u = me(); if (!u) { location.hash = '#/masuk'; return ''; }
+  const txs = S.txs.filter(t => t.uid === u.id).slice().reverse();
+  const masuk  = txs.filter(t=>t.amt>0).reduce((a,t)=>a+t.amt,0);
+  const keluar = txs.filter(t=>t.amt<0).reduce((a,t)=>a-t.amt,0);
+  const pct = Math.min(100, u.points / CFG.goal * 100);
+  const bisaAbsen = u.lastBonus !== new Date().toISOString().slice(0,10);
+  const rd = S.redemptions.filter(r => r.uid === u.id).slice().reverse();
+
+  const baris = txs.slice(0,8).map(t => `
+    <tr><td class="nowrap small">${tgl(t.at)}</td>
+        <td>${esc(t.note || TYPES[t.type] || t.type)}</td>
+        <td><span class="badge ${t.amt>0?'badge-in':'badge-out'}">${esc(TYPES[t.type]||t.type)}</span></td>
+        <td class="num ${t.amt>0?'amt-in':'amt-out'}">${t.amt>0?'+':'−'}${P(Math.abs(t.amt))}</td>
+        <td class="num">${P(t.balance)}</td></tr>`).join('')
+    || '<tr><td colspan="5"><div class="empty">Belum ada transaksi.</div></td></tr>';
+
+  const tukar = rd.length ? `
+    <div><h2 style="font-size:1.15rem">Penukaran Anda</h2><div class="table-wrap"><table>
+      <thead><tr><th>Tanggal</th><th>Hadiah</th><th class="num">Poin</th><th>Status</th></tr></thead>
+      <tbody>${rd.map(r => {
+        const w = S.rewards.find(x=>x.id===r.rewardId) || {title:'-',icon:'🎁'};
+        const lab = {pending:'Diproses', approved:'Selesai', rejected:'Ditolak'}[r.status];
+        const bg  = {pending:'badge-neutral', approved:'badge-in', rejected:'badge-out'}[r.status];
+        return `<tr><td class="nowrap small">${tgl(r.at)}</td><td>${w.icon} ${esc(w.title)}</td>
+                <td class="num">${P(r.cost)}</td><td><span class="badge ${bg}">${lab}</span></td></tr>`;
+      }).join('')}</tbody></table></div></div>` : '';
+
+  return `
+  <div class="page-head"><div class="wrap">
+    <h1>Halo, ${esc(u.name)} 👋</h1>
+    <p class="muted">Anggota sejak ${tgl(u.created)}</p>
+  </div></div>
+  <section class="section" style="padding-top:26px"><div class="wrap">
+    <div class="grid" style="grid-template-columns:1fr;gap:18px">
+      <div class="balance">
+        <div class="label">Saldo poin Anda</div>
+        <div class="value">${P(u.points)}</div>
+        <div class="sub">${(u.points/CFG.goal*100).toFixed(2)}% dari target program ${P(CFG.goal)} poin</div>
+        <div class="progress"><i style="width:${Math.max(1.5,pct)}%"></i></div>
+        <div class="actions">
+          <button class="btn ${bisaAbsen?'btn-gold':'btn-ghost is-disabled'}" ${bisaAbsen?'':'disabled'} onclick="absen()">
+            ${bisaAbsen ? 'Ambil bonus harian +' + P(CFG.daily) : 'Bonus harian sudah diambil'}</button>
+          <a class="btn btn-ghost" href="#/katalog">Tukar poin</a>
+          <a class="btn btn-ghost" href="#/riwayat">Riwayat lengkap</a>
+        </div>
+      </div>
+      <div class="grid grid-3">
+        <div class="mini"><div class="cap">Total poin masuk</div><div class="num" style="color:var(--ok)">+${P(masuk)}</div></div>
+        <div class="mini"><div class="cap">Total poin terpakai</div><div class="num" style="color:var(--bad)">${keluar>0?'−':''}${P(keluar)}</div></div>
+        <div class="mini"><div class="cap">Jumlah transaksi</div><div class="num">${P(txs.length)}</div></div>
+      </div>
+      <div>
+        <div class="flex between" style="margin-bottom:12px">
+          <h2 class="mb0" style="font-size:1.15rem">Transaksi poin terakhir</h2>
+          <a class="small" href="#/riwayat">Lihat semua &rarr;</a>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tanggal</th><th>Keterangan</th><th>Jenis</th><th class="num">Poin</th><th class="num">Saldo</th></tr></thead>
+          <tbody>${baris}</tbody></table></div>
+      </div>
+      ${tukar}
+    </div>
+  </div></section>`;
+}
+
+function absen() {
+  const u = me();
+  const today = new Date().toISOString().slice(0,10);
+  if (u.lastBonus === today) { toast('Bonus harian hari ini sudah diambil.', 'info'); return; }
+  addPoints(u.id, CFG.daily, 'bonus_harian', 'Absen harian ' + today);
+  u.lastBonus = today; save();
+  toast('Berhasil! ' + P(CFG.daily) + ' poin masuk ke saldo Anda.');
+}
+
+function vKatalog() {
+  const u = me();
+  const saldo = u ? u.points : 0;
+  const kartu = S.rewards.map(r => {
+    let aksi;
+    if (r.stock <= 0)          aksi = '<button class="btn btn-ghost btn-sm is-disabled" disabled>Stok habis</button>';
+    else if (!u)               aksi = '<a class="btn btn-ghost btn-sm" href="#/masuk">Masuk untuk menukar</a>';
+    else if (saldo < r.cost)   aksi = `<button class="btn btn-ghost btn-sm is-disabled" disabled>Kurang ${P(r.cost-saldo)} poin</button>`;
+    else                       aksi = `<button class="btn btn-primary btn-sm btn-block" onclick="tukar(${r.id})">Tukar sekarang</button>`;
+    return `<div class="reward"><div class="thumb">${r.icon}</div><div class="body">
+      <h3 class="mb0">${esc(r.title)}</h3>
+      <p class="small muted mb0">${esc(r.desc)}</p>
+      <div class="cost">${P(r.cost)} poin</div>
+      <div class="small muted">${r.stock>0 ? 'Sisa stok: ' + P(r.stock) : 'Stok habis'}</div>
+      ${aksi}</div></div>`;
+  }).join('');
+
+  return `
+  <div class="page-head"><div class="wrap flex between">
+    <div><h1>Katalog penukaran</h1><p class="muted">Pilih kebutuhan Anda, poin langsung terpotong dari saldo.</p></div>
+    ${u ? `<div class="mini" style="min-width:190px"><div class="cap">Saldo Anda</div><div class="num">${P(saldo)}</div></div>` : ''}
+  </div></div>
+  <section class="section" style="padding-top:26px"><div class="wrap">
+    ${u ? '' : '<div class="alert alert-info"><a href="#/masuk">Masuk</a> atau <a href="#/daftar">daftar gratis</a> untuk mulai menukar poin.</div>'}
+    <div class="grid grid-3">${kartu}</div>
+  </div></section>`;
+}
+
+function tukar(id) {
+  const u = me(), r = S.rewards.find(x => x.id === id);
+  if (!confirm('Tukar ' + r.title + ' seharga ' + P(r.cost) + ' poin?')) return;
+  try {
+    addPoints(u.id, -r.cost, 'penukaran', 'Tukar: ' + r.title);
+    r.stock--;
+    S.redemptions.push({ id:S.redemptions.length+1, uid:u.id, rewardId:r.id, cost:r.cost, status:'pending', at:new Date().toISOString() });
+    save();
+    toast('Penukaran "' + r.title + '" diterima dan sedang diproses.');
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+function vRiwayat() {
+  const u = me(); if (!u) { location.hash = '#/masuk'; return ''; }
+  const txs = S.txs.filter(t => t.uid === u.id).slice().reverse();
+  const baris = txs.map(t => `
+    <tr><td class="small muted">${t.id}</td>
+        <td class="nowrap small">${tgl(t.at)}</td>
+        <td>${esc(t.note || TYPES[t.type] || t.type)}</td>
+        <td><span class="badge ${t.amt>0?'badge-in':'badge-out'}">${esc(TYPES[t.type]||t.type)}</span></td>
+        <td class="num ${t.amt>0?'amt-in':'amt-out'}">${t.amt>0?'+':'−'}${P(Math.abs(t.amt))}</td>
+        <td class="num">${P(t.balance)}</td></tr>`).join('')
+    || '<tr><td colspan="6"><div class="empty">Belum ada transaksi poin.</div></td></tr>';
+
+  return `
+  <div class="page-head"><div class="wrap">
+    <h1>Riwayat poin</h1>
+    <p class="muted">${P(txs.length)} transaksi tercatat · saldo saat ini <strong>${P(u.points)}</strong> poin</p>
+  </div></div>
+  <section class="section" style="padding-top:26px"><div class="wrap"><div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>Tanggal</th><th>Keterangan</th><th>Jenis</th><th class="num">Poin</th><th class="num">Saldo setelahnya</th></tr></thead>
+    <tbody>${baris}</tbody></table></div></div></section>`;
+}
+
+function vAdmin() {
+  const u = me(); if (!u) { location.hash = '#/masuk'; return ''; }
+  const beredar = S.users.reduce((a,x)=>a+x.points,0);
+  const pend = S.redemptions.filter(r=>r.status==='pending');
+
+  return `
+  <div class="page-head"><div class="wrap">
+    <h1>Panel admin</h1>
+    <p class="muted">Contoh tampilan pengelola: menambah/mengurangi poin dan memproses penukaran.</p>
+  </div></div>
+  <section class="section" style="padding-top:26px"><div class="wrap">
+    <div class="stats" style="margin-bottom:26px">
+      <div class="stat"><div class="num">${P(S.users.length)}</div><div class="cap">Anggota</div></div>
+      <div class="stat"><div class="num">${P(beredar)}</div><div class="cap">Poin beredar</div></div>
+      <div class="stat"><div class="num">${P(S.txs.length)}</div><div class="cap">Transaksi</div></div>
+      <div class="stat"><div class="num">${P(S.redemptions.length)}</div><div class="cap">Penukaran</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:26px">
+      <h3>Tambah / kurangi poin anggota</h3>
+      <form class="grid grid-2" style="gap:14px" onsubmit="return doKoreksi(event)">
+        <div class="field mb0"><label for="au">Anggota</label>
+          <select class="input" id="au">${S.users.map(x=>`<option value="${x.id}">#${x.id} — ${esc(x.name)} (${P(x.points)} poin)</option>`).join('')}</select></div>
+        <div class="field mb0"><label for="aj">Jumlah poin</label>
+          <input class="input" id="aj" type="number" placeholder="contoh: 500 atau -500" required>
+          <div class="hint">Angka positif menambah, negatif mengurangi.</div></div>
+        <div class="field mb0"><label for="ac">Keterangan</label>
+          <input class="input" id="ac" placeholder="alasan penyesuaian"></div>
+        <div><label>&nbsp;</label><button class="btn btn-primary" type="submit">Simpan penyesuaian</button></div>
+      </form>
+    </div>
+
+    <h2 style="font-size:1.15rem">Permintaan penukaran</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th>Tanggal</th><th>Anggota</th><th>Hadiah</th><th class="num">Poin</th><th>Status</th><th>Aksi</th></tr></thead>
+      <tbody>${S.redemptions.slice().reverse().map(r => {
+        const w = S.rewards.find(x=>x.id===r.rewardId)||{title:'-',icon:'🎁'};
+        const own = S.users.find(x=>x.id===r.uid)||{name:'-'};
+        const lab = {pending:'Diproses', approved:'Selesai', rejected:'Ditolak'}[r.status];
+        const bg  = {pending:'badge-neutral', approved:'badge-in', rejected:'badge-out'}[r.status];
+        const aksi = r.status === 'pending'
+          ? `<div class="flex" style="gap:6px"><button class="btn btn-primary btn-sm" onclick="proses(${r.id},1)">Selesai</button>
+             <button class="btn btn-ghost btn-sm" onclick="proses(${r.id},0)">Tolak</button></div>`
+          : '<span class="small muted">—</span>';
+        return `<tr><td class="small muted">${r.id}</td><td class="nowrap small">${tgl(r.at)}</td>
+                <td>${esc(own.name)}</td><td>${w.icon} ${esc(w.title)}</td><td class="num">${P(r.cost)}</td>
+                <td><span class="badge ${bg}">${lab}</span></td><td>${aksi}</td></tr>`;
+      }).join('') || '<tr><td colspan="7"><div class="empty">Belum ada permintaan penukaran.</div></td></tr>'}
+      </tbody></table></div>
+    ${pend.length ? '' : '<p class="small muted" style="margin-top:12px">Tukar salah satu hadiah di katalog untuk melihat alur persetujuan.</p>'}
+  </div></section>`;
+}
+
+function doKoreksi(ev) {
+  ev.preventDefault();
+  const uid = Number(document.getElementById('au').value);
+  const amt = Number(document.getElementById('aj').value);
+  const cat = document.getElementById('ac').value.trim() || 'Penyesuaian admin';
+  if (!amt) { toast('Jumlah poin tidak boleh 0.', 'error'); return false; }
+  try {
+    const saldo = addPoints(uid, amt, 'koreksi', cat);
+    toast('Berhasil. Saldo anggota sekarang ' + P(saldo) + ' poin.');
+  } catch (e) { toast(e.message, 'error'); }
+  return false;
+}
+
+function proses(id, setuju) {
+  const r = S.redemptions.find(x => x.id === id);
+  if (!r || r.status !== 'pending') return;
+  if (setuju) { r.status = 'approved'; save(); toast('Penukaran ditandai selesai.'); return; }
+  if (!confirm('Tolak penukaran ini? Poin akan dikembalikan.')) return;
+  r.status = 'rejected';
+  const w = S.rewards.find(x => x.id === r.rewardId); if (w) w.stock++;
+  addPoints(r.uid, r.cost, 'koreksi', 'Pengembalian poin — penukaran #' + r.id + ' ditolak');
+  save();
+  toast(P(r.cost) + ' poin dikembalikan ke anggota.');
+}
+
+function vCara() {
+  return `
+  <div class="page-head"><div class="wrap"><h1>Cara kerja poin</h1>
+    <p class="muted">Alurnya sederhana dan setiap langkah meninggalkan catatan.</p></div></div>
+  <section class="section" style="padding-top:30px"><div class="wrap">
+    <div class="grid grid-2">
+      <div class="card"><h3>1. Poin masuk</h3><p>Poin bertambah dari bonus pendaftaran, absen harian, penyelesaian tugas, bonus referral, atau transaksi belanja. Sumber poin bisa ditambah kapan saja karena semuanya lewat satu fungsi yang sama di sisi server.</p></div>
+      <div class="card"><h3>2. Poin tercatat</h3><p>Setiap perubahan membuat satu baris di buku besar: tanggal, jenis, jumlah, keterangan, dan sisa saldo saat itu.</p></div>
+      <div class="card"><h3>3. Poin ditukar</h3><p>Dari katalog, poin dipotong dan stok berkurang dalam satu proses. Kalau satu langkah gagal, semuanya dibatalkan.</p></div>
+      <div class="card"><h3>4. Admin memantau</h3><p>Panel admin bisa menambah atau mengoreksi poin anggota, mengatur katalog, dan menandai penukaran selesai. Koreksi manual pun tetap masuk buku besar.</p></div>
+    </div>
+    <h2 style="margin-top:40px">Nilai poin</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Aktivitas</th><th class="num">Poin</th><th>Catatan</th></tr></thead>
+      <tbody>
+        <tr><td>Bonus pendaftaran</td><td class="num amt-in">+${P(CFG.signup)}</td><td>Sekali per akun</td></tr>
+        <tr><td>Absen harian</td><td class="num amt-in">+${P(CFG.daily)}</td><td>Sekali per hari</td></tr>
+        <tr><td>Penukaran hadiah</td><td class="num amt-out">sesuai katalog</td><td>Minimal 500 poin</td></tr>
+      </tbody></table></div>
+    <p class="small muted" style="margin-top:12px">Semua angka di atas diatur lewat satu file konfigurasi.</p>
+  </div></section>`;
+}
+
+const FAQ = [
+  ['Bagaimana cara mendapatkan poin?','Poin didapat dari bonus pendaftaran, absen harian, penyelesaian tugas, dan aktivitas lain yang diatur pengelola program.'],
+  ['Apakah poin bisa kedaluwarsa?','Kebijakan masa berlaku poin ditentukan pengelola. Bila diberlakukan, poin yang hangus tetap tercatat di riwayat.'],
+  ['Berapa lama proses penukaran?','Setelah penukaran dibuat, statusnya "Diproses". Pengelola menandainya "Selesai" bila hadiah sudah dikirim.'],
+  ['Poin terpotong tapi hadiah belum diterima?','Cek status penukaran di dashboard. Bila ditolak, poin dikembalikan penuh dan tercatat di riwayat.'],
+  ['Apakah akun bisa dipakai di HP?','Bisa. Situs ini dirancang mobile-first, seluruh halaman berfungsi penuh di layar kecil.'],
+  ['Bagaimana kalau lupa kata sandi?','Hubungi pengelola melalui halaman kontak untuk permintaan reset kata sandi.']
+];
+
+function vBantuan() {
+  return `
+  <div class="page-head"><div class="wrap"><h1>Pusat bantuan</h1>
+    <p class="muted">Jawaban singkat untuk pertanyaan yang paling sering masuk.</p></div></div>
+  <section class="section" style="padding-top:30px"><div class="wrap"><div class="grid grid-2">
+    ${FAQ.map(f => `<div class="card"><h3>${esc(f[0])}</h3><p>${esc(f[1])}</p></div>`).join('')}
+  </div></div></section>`;
+}
+
+function vSyarat() {
+  return `
+  <div class="page-head"><div class="wrap"><h1>Syarat &amp; ketentuan</h1>
+    <p class="muted">Contoh teks — diganti dengan ketentuan resmi sebelum situs dipublikasikan.</p></div></div>
+  <section class="section" style="padding-top:30px"><div class="wrap" style="max-width:760px">
+    <h2>1. Keanggotaan</h2><p>Keanggotaan bersifat pribadi dan tidak dapat dipindahtangankan.</p>
+    <h2>2. Perolehan poin</h2><p>Poin diberikan atas aktivitas yang ditetapkan pengelola program.</p>
+    <h2>3. Penukaran poin</h2><p>Bila penukaran ditolak, poin dikembalikan penuh ke saldo anggota.</p>
+    <h2>4. Penyalahgunaan</h2><p>Pengelola berhak membekukan akun bila ditemukan indikasi kecurangan.</p>
+  </div></section>`;
+}
+
+/* ---------- router ---------- */
+const ROUTES = {
+  '#/':           vBeranda,
+  '#/masuk':      vMasuk,
+  '#/daftar':     vDaftar,
+  '#/dashboard':  vDashboard,
+  '#/katalog':    vKatalog,
+  '#/riwayat':    vRiwayat,
+  '#/admin':      vAdmin,
+  '#/cara-kerja': vCara,
+  '#/bantuan':    vBantuan,
+  '#/syarat':     vSyarat
+};
+
+function render() {
+  if (location.hash === '#/keluar') {
+    S.session = null; save();
+    history.replaceState(null, '', '#/');
+    pesan = { msg:'Anda sudah keluar. Sampai jumpa lagi!', type:'ok' };
+  }
+  const view = ROUTES[location.hash] || ROUTES['#/'];
+  const alert = pesan
+    ? `<div class="wrap" style="padding-top:16px"><div class="alert alert-${pesan.type==='error'?'error':pesan.type==='info'?'info':'ok'}">${esc(pesan.msg)}</div></div>`
+    : '';
+  pesan = null;
+  document.getElementById('nav').innerHTML = nav();
+  document.getElementById('nav').classList.remove('open');
+  document.getElementById('app').innerHTML = alert + view();
+}
+
+window.addEventListener('hashchange', () => { render(); window.scrollTo(0,0); });
+if (!location.hash) location.hash = '#/';
+render();
+</script>
+</body>
+</html>
